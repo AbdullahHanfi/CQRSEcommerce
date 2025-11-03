@@ -1,0 +1,42 @@
+### C# ###
+
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 2015 cache/options directory
+.vs/
+
+# Rider specific
+.idea/
+*.sln.iml
+riderModule.iml
+
+# ReSharper specific
+/_ReSharper*/
+*/_ReSharper*/
+*.resharper
+
+# NuGet Packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+
+# Test Results
+**/[Tt]est[Rr]esult*/
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
+# ignore development settings
+appsettings.json

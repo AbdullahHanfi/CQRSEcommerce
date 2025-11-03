@@ -1,0 +1,12 @@
+global using System.Security.Claims;
+global using System.Text;
+global using Application.Abstractions.Services;
+global using Application.DTOs.Auth;
+global using Application.Request.Auth;
+global using Domain.Shared.Results;
+global using Microsoft.Extensions.Options;
+global using Microsoft.IdentityModel.Tokens;
+global using Infrastructure.Identity.Configurations;
+global using System.IdentityModel.Tokens.Jwt;
+global using Infrastructure.Persistence.Models;
+global using Microsoft.AspNetCore.Identity;
