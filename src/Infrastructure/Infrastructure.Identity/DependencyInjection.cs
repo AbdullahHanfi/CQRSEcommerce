@@ -12,13 +12,24 @@ using Microsoft.IdentityModel.Tokens;
 using Services.Implementation;
 using Application.Abstractions.Services;
 
-public static partial class DependencyInjection
+public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureIdentity(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<JWTSettings>(configuration.GetSection("JWT"));
-        var jwtSettings = configuration.GetSection("JWT").Get<JWTSettings>()
+        services.Configure<JwtSettings>(configuration.GetSection("JWT"));
+        
+        var jwtSettings = configuration.GetSection("JWT").Get<JwtSettings>()
                           ?? throw new InvalidOperationException("JWT settings are not configured in appsettings.json.");
+
+        // VALIDATE JWT SETTINGS AT STARTUP
+        try
+        {
+            jwtSettings.Validate();
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException($"JWT configuration error: {ex.Message}");
+        }
 
         services.AddIdentity<ApplicationUser, ApplicationRole>()
             .AddEntityFrameworkStores<AuthDbContext>()
@@ -26,52 +37,64 @@ public static partial class DependencyInjection
 
         services.Configure<IdentityOptions>(options =>
         {
-            // password
-            options.Password.RequireDigit = false;
-            options.Password.RequireLowercase = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequiredLength = 6;
-            options.Password.RequireNonAlphanumeric = false;
+            // Password settings
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireNonAlphanumeric = true;
 
-            // user
+            // User settings
             options.User.RequireUniqueEmail = true;
-            options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+/ ";
+            options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
 
-            //SignIn
-            options.SignIn.RequireConfirmedAccount = false;
-            options.SignIn.RequireConfirmedEmail = false;
-            options.SignIn.RequireConfirmedPhoneNumber = false;
-
-            // Lockout
+            // Lockout settings
             options.Lockout.MaxFailedAccessAttempts = 5;
-            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         });
 
         services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(o =>
+        {
+            o.RequireHttpsMetadata = !IsDevelopment();
+            o.SaveToken = false;
+            o.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(5),
+                ValidIssuer = jwtSettings.Issuer,
+                ValidAudience = jwtSettings.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
+            };
+            
+            // Add better error handling for JWT
+            o.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
                 {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(o =>
-                {
-                    // For development, this is fine. For production, you should set this to true.
-                    o.RequireHttpsMetadata = false;
-                    o.SaveToken = false;
-                    o.TokenValidationParameters = new TokenValidationParameters
+                    if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
                     {
-                        ValidateIssuerSigningKey = true,
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ClockSkew = TimeSpan.Zero,
-                        ValidIssuer = jwtSettings.Issuer,
-                        ValidAudience = jwtSettings.Audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
-                    };
-                });
+                        context.Response.Headers["Token-Expired"] = "true";
+                    }
+                    return Task.CompletedTask;
+                }
+            };
+        });
 
         services.AddScoped<IAuthenticationService, AuthenticationService>();
 
         return services;
+    }
+    
+    private static bool IsDevelopment()
+    {
+        return Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
     }
 }

@@ -10,3 +10,4 @@ global using Infrastructure.Identity.Configurations;
 global using System.IdentityModel.Tokens.Jwt;
 global using Infrastructure.Persistence.Models;
 global using Microsoft.AspNetCore.Identity;
+global using Microsoft.EntityFrameworkCore;
