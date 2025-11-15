@@ -9,239 +9,223 @@ using System.Text;
 using System.Text.Json;
 
 namespace Infrastructure.Shared.Services;
+
 /// <summary>
-/// Impelement Decortor Design Pattern for decortor repository using Cache Aside
+/// Implements Decorator Pattern for repository using Cache-Aside pattern
 /// </summary>
-/// <typeparam name="TEntity"></typeparam>
-/// <param name="repository"></param>
-/// <param name="distributedCache"></param>
-public class CachedRepository<TEntity>(Repository<TEntity> repository,
-    IDistributedCache distributedCache,
-    IConnectionMultiplexer redis)
-    : IRepository<TEntity>
+public class CachedRepository<TEntity> : IRepository<TEntity>
     where TEntity : class
 {
-    private readonly string _generalkey = typeof(TEntity).Name;
-    private const int _slidingExpirationInDays = 14;
-    /// <summary>
-    /// Cache lower than 10k item for 7 Days with single access
-    /// </summary>
-    /// <returns></returns>
-    public async Task<IEnumerable<TEntity>> GetAllAsync()
-    {
-        var cacheKey = $"{_generalkey}:all";
-        var cacheData = await distributedCache.GetStringAsync(cacheKey);
-        if (!string.IsNullOrEmpty(cacheData))
-        {
-            return JsonSerializer.Deserialize<IEnumerable<TEntity>>(cacheData)!;
-        }
-        var entites = await repository.GetAllAsync();
+    private readonly IRepository<TEntity> _decorated;
+    private readonly IDistributedCache _distributedCache;
+    private readonly IConnectionMultiplexer _redis;
+    private readonly string _generalKey;
+    private readonly TimeSpan _slidingExpiration;
+    private readonly TimeSpan _absoluteExpiration;
 
-        if (entites.Count() < 10000)
-        {
-            await distributedCache.SetStringAsync(cacheKey,
-                JsonSerializer.Serialize(entites),
-                new DistributedCacheEntryOptions
-                {
-                    SlidingExpiration = TimeSpan.FromDays(_slidingExpirationInDays)
-                });
-        }
-        return entites;
+    public CachedRepository(
+        Repository<TEntity> decorated,
+        IDistributedCache distributedCache,
+        IConnectionMultiplexer redis)
+    {
+        _decorated = decorated;
+        _distributedCache = distributedCache;
+        _redis = redis;
+        _generalKey = typeof(TEntity).Name;
+        _slidingExpiration = TimeSpan.FromDays(1);
+        _absoluteExpiration = TimeSpan.FromDays(7);
     }
 
-    /// <summary>
-    /// Cache item for 14 Days without single access
-    /// </summary>
-    /// <returns></returns>
+    public async Task<IEnumerable<TEntity>> GetAllAsync()
+    {
+        var cacheKey = $"{_generalKey}:all";
+        var cacheData = await _distributedCache.GetStringAsync(cacheKey);
+        
+        if (!string.IsNullOrEmpty(cacheData))
+        {
+            return JsonSerializer.Deserialize<IEnumerable<TEntity>>(cacheData) ?? [];
+        }
+
+        var entities = await _decorated.GetAllAsync();
+
+        if (entities.Any())
+        {
+            await _distributedCache.SetStringAsync(cacheKey,
+                JsonSerializer.Serialize(entities),
+                new DistributedCacheEntryOptions
+                {
+                    SlidingExpiration = _slidingExpiration,
+                    AbsoluteExpirationRelativeToNow = _absoluteExpiration
+                });
+        }
+        
+        return entities;
+    }
+
     public async Task<TEntity?> GetByIdAsync(Guid id)
     {
-        string cacheKey = $"{_generalkey}:{id}";
-        var cacheData = await distributedCache.GetStringAsync(cacheKey);
+        var cacheKey = $"{_generalKey}:{id}";
+        var cacheData = await _distributedCache.GetStringAsync(cacheKey);
+        
         if (!string.IsNullOrEmpty(cacheData))
         {
             return JsonSerializer.Deserialize<TEntity>(cacheData);
         }
 
-        var entity = await repository.GetByIdAsync(id);
+        var entity = await _decorated.GetByIdAsync(id);
+        
         if (entity != null)
         {
-            await distributedCache.SetStringAsync(cacheKey,
+            await _distributedCache.SetStringAsync(cacheKey,
                 JsonSerializer.Serialize(entity),
                 new DistributedCacheEntryOptions
                 {
-                    SlidingExpiration = TimeSpan.FromDays(_slidingExpirationInDays)
+                    SlidingExpiration = _slidingExpiration,
+                    AbsoluteExpirationRelativeToNow = _absoluteExpiration
                 });
         }
+        
         return entity;
     }
 
-    /// <summary>
-    /// Add item and invalidate cache for relevant effected
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <returns></returns>
-    public async Task AddAsync(TEntity entity)
-    {
-        await repository.AddAsync(entity);
-
-        await InvalidateCacheAsync();
-    }
-
-    /// <summary>
-    /// update entity and invalidate cache for relevant effected
-    /// </summary>
-    /// <param name="entity"></param>
-    public async void Update(TEntity entity)
-    {
-        repository.Update(entity);
-
-        if (entity is BaseEntity entityWithId)
-        {
-            string cacheKey = $"{_generalkey}:{entityWithId.Id}";
-            await distributedCache.RemoveAsync(cacheKey);
-        }
-
-        await InvalidateCacheAsync();
-    }
-
-    /// <summary>
-    /// cache entity base on predicate and entity type 
-    /// </summary>
-    /// <param name="predicate"></param>
-    /// <returns></returns>
     public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)
     {
-        string predicateKey = GeneratePredicateKey(predicate);
-        string cacheKey = $"{_generalkey}:find:{predicate}";
+        var predicateKey = GeneratePredicateKey(predicate);
+        var cacheKey = $"{_generalKey}:find:{predicateKey}";
 
-        var cacheData = await distributedCache.GetStringAsync(cacheKey);
+        var cacheData = await _distributedCache.GetStringAsync(cacheKey);
         if (!string.IsNullOrEmpty(cacheData))
         {
-            return JsonSerializer.Deserialize<IEnumerable<TEntity>>(cacheData)!;
+            return JsonSerializer.Deserialize<IEnumerable<TEntity>>(cacheData) ?? [];
         }
 
-        var entity = await repository.FindAsync(predicate);
+        var entities = await _decorated.FindAsync(predicate);
+        var entityList = entities.ToList();
 
-        if (entity != null)
+        if (entityList.Any())
         {
-            await distributedCache.SetStringAsync(cacheKey,
-                JsonSerializer.Serialize(entity),
+            await _distributedCache.SetStringAsync(cacheKey,
+                JsonSerializer.Serialize(entityList),
                 new DistributedCacheEntryOptions
                 {
-                    SlidingExpiration = TimeSpan.FromDays(_slidingExpirationInDays)
+                    SlidingExpiration = _slidingExpiration,
+                    AbsoluteExpirationRelativeToNow = _absoluteExpiration
                 });
         }
 
-        return entity ?? [];
+        return entityList;
     }
 
-
-    public async Task<int> CountAsync()
+    public async Task AddAsync(TEntity entity)
     {
-        string cacheKey = $"{_generalkey}:count";
-
-        var cacheData = await distributedCache.GetStringAsync(cacheKey);
-
-        if (!string.IsNullOrEmpty(cacheData))
-        {
-            return JsonSerializer.Deserialize<int>(cacheData)!;
-        }
-
-        var count = await repository.CountAsync();
-
-        await distributedCache.SetStringAsync(cacheKey,
-            count.ToString(),
-            new DistributedCacheEntryOptions
-            {
-                SlidingExpiration = TimeSpan.FromDays(_slidingExpirationInDays)
-            });
-
-        return count;
-
-
-    }
-    public async void Remove(TEntity entity)
-    {
-        repository.Remove(entity);
-
+        await _decorated.AddAsync(entity);
         await InvalidateCacheAsync();
     }
 
-    /// <summary>
-    /// cache count base on predicate and entity type 
-    /// </summary>
-    /// <param name="predicate"></param>
-    /// <returns></returns>
-    public async Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate)
+    public void Update(TEntity entity)
     {
-        var predicateKey = GeneratePredicateKey(predicate);
-        var cacheKey = $"{_generalkey}:count:{predicateKey}";
+        _decorated.Update(entity);
+        _ = InvalidateCacheAsync();
+    }
 
-        var cacheData = await distributedCache.GetStringAsync(cacheKey);
+    public void Remove(TEntity entity)
+    {
+        _decorated.Remove(entity);
+        _ = InvalidateCacheAsync();
+    }
 
-        if (!string.IsNullOrEmpty(cacheData))
+    public async Task<int> CountAsync()
+    {
+        var cacheKey = $"{_generalKey}:count";
+        var cacheData = await _distributedCache.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cacheData) && int.TryParse(cacheData, out var count))
         {
-            return Int32.Parse(cacheData);
+            return count;
         }
 
-        var count = await repository.CountAsync(predicate);
-
-        await distributedCache.SetStringAsync(cacheKey,
+        count = await _decorated.CountAsync();
+        
+        await _distributedCache.SetStringAsync(cacheKey,
             count.ToString(),
             new DistributedCacheEntryOptions
             {
-                SlidingExpiration = TimeSpan.FromDays(_slidingExpirationInDays)
+                SlidingExpiration = _slidingExpiration,
+                AbsoluteExpirationRelativeToNow = _absoluteExpiration
             });
 
         return count;
     }
 
-    /// <summary>
-    /// Doesn't cache cuz it's of type IQueryable
-    /// </summary>
-    /// <param name="count"></param>
-    /// <returns></returns>
-    public IQueryable<TEntity> Skip(int count)
+    public async Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate)
     {
-        return repository.Skip(count);
-    }
-    /// <summary>
-    /// Doesn't cache cuz it's of type IQueryable
-    /// </summary>
-    /// <param name="count"></param>
-    /// <returns></returns>
-    public IQueryable<TEntity> Take(int count)
-    {
-        return repository.Take(count);
+        var predicateKey = GeneratePredicateKey(predicate);
+        var cacheKey = $"{_generalKey}:count:{predicateKey}";
+        var cacheData = await _distributedCache.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cacheData) && int.TryParse(cacheData, out var count))
+        {
+            return count;
+        }
+
+        count = await _decorated.CountAsync(predicate);
+        
+        await _distributedCache.SetStringAsync(cacheKey,
+            count.ToString(),
+            new DistributedCacheEntryOptions
+            {
+                SlidingExpiration = _slidingExpiration,
+                AbsoluteExpirationRelativeToNow = _absoluteExpiration
+            });
+
+        return count;
     }
 
-    /// <summary>
-    /// it will invalidate all get data
-    /// </summary>
-    /// <returns></returns>
+    public IQueryable<TEntity> Skip(int count) => _decorated.Skip(count);
+    public IQueryable<TEntity> Take(int count) => _decorated.Take(count);
+
     private async Task InvalidateCacheAsync()
     {
-        await distributedCache.RemoveAsync($"{_generalkey}:all");
-        await InvalidateCacheByPatternAsync($"{_generalkey}:count*");
-        await InvalidateCacheByPatternAsync($"{_generalkey}:find*");
-    }
-    private async Task InvalidateCacheByPatternAsync(string pattern)
-    {
-        var server = redis.GetServer(redis.GetEndPoints().First());
-        var keys = server.Keys(pattern: pattern).ToArray();
-        
-        if (keys is not null && keys.Any())
+        try
         {
-            await redis.GetDatabase().KeyDeleteAsync(keys);
+            await _distributedCache.RemoveAsync($"{_generalKey}:all");
+            await InvalidateCacheByPatternAsync($"{_generalKey}:count*");
+            await InvalidateCacheByPatternAsync($"{_generalKey}:find*");
+        }
+        catch (Exception ex)
+        {
+            // Log cache invalidation errors but don't fail the operation
+            Console.WriteLine($"Cache invalidation error: {ex.Message}");
         }
     }
-    private string GeneratePredicateKey(Expression<Func<TEntity, bool>> predicate)
+
+    private async Task InvalidateCacheByPatternAsync(string pattern)
     {
-        return Convert.ToBase64String(
-            SHA256.HashData(
-                Encoding.UTF8.GetBytes(predicate.ToString())
-            )
-        ).Replace("/", "_").Replace("+", "-");
+        try
+        {
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var keys = server.Keys(pattern: $"*{pattern}*").ToArray();
+            
+            if (keys.Any())
+            {
+                var db = _redis.GetDatabase();
+                await Task.WhenAll(keys.Select(key => db.KeyDeleteAsync(key)));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Pattern cache invalidation error: {ex.Message}");
+        }
     }
 
+    private static string GeneratePredicateKey(Expression<Func<TEntity, bool>> predicate)
+    {
+        var expressionString = predicate.ToString();
+        using var sha256 = SHA256.Create();
+        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(expressionString));
+        return Convert.ToBase64String(hash)
+            .Replace("/", "_")
+            .Replace("+", "-")
+            .Replace("=", "");
+    }
 }
