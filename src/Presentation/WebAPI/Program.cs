@@ -5,14 +5,10 @@ using Infrastructure.Persistence;
 namespace WebAPI;
 
 using Application;
-using Domain.Repositories;
 using Infrastructure.Identity;
-using Infrastructure.Persistence.Implementation;
 using Infrastructure.Shared;
-using Infrastructure.Shared.Services;
-using Serilog;
-using WebAPI.Extensions;
-using WebAPI.Extensions.ServiceCollectionExtensions;
+using Extensions;
+using Extensions.ServiceCollectionExtensions;
 
 public class Program
 {
@@ -23,8 +19,8 @@ public class Program
         // Add services to the container.
         builder.Services.AddControllers();
 
+        // Add CORS services and define a policy 
         #region CORS Policy
-        // --- Add CORS services and define a policy ---
         const string myAllowSpecificOrigins = "_myAllowSpecificOrigins";
         builder.Services.AddCors(options =>
         {
@@ -41,12 +37,6 @@ public class Program
 
         builder.Host.AddSerilog();
 
-        //builder.Services.AddApplication();
-        //builder.Services.AddInfrastructurePersistence(builder.Configuration);
-        //builder.Services.AddInfrastructureIdentity(builder.Configuration);
-        //builder.Services.AddSharedInfrastructure(builder.Configuration);
-        //builder.Services.AddWebAPI(builder.Configuration);
-        
         builder.Services
             .AddApplication()
             .AddInfrastructurePersistence(builder.Configuration)
@@ -73,8 +63,7 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
-
-
+        
         app.MapControllers();
 
         app.Run();

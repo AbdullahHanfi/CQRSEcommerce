@@ -10,7 +10,7 @@ using System.Text.Json;
 
 namespace Infrastructure.Shared.Services;
 /// <summary>
-/// Impelement Decortor Design Pattern for decortor repository using Cache Aside
+/// Implement Decorator Design Pattern for decorator repository using Cache Aside
 /// </summary>
 /// <typeparam name="TEntity"></typeparam>
 /// <param name="repository"></param>
@@ -24,7 +24,7 @@ public class CachedRepository<TEntity>(Repository<TEntity> repository,
     private readonly string _generalkey = typeof(TEntity).Name;
     private const int _slidingExpirationInDays = 14;
     /// <summary>
-    /// Cache lower than 10k item for 7 Days with single access
+    /// Cache lower than 10k item for 14 Days with single access
     /// </summary>
     /// <returns></returns>
     public async Task<IEnumerable<TEntity>> GetAllAsync()

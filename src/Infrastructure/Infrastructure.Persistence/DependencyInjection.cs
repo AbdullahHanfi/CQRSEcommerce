@@ -17,7 +17,7 @@ public static class DependencyInjection
             options.UseSqlServer(configuration.GetConnectionString("SQL"),
             b => b.MigrationsAssembly(typeof(AuthDbContext).Assembly.FullName)));
 
-        //services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        // services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped(typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

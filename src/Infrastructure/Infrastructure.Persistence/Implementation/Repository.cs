@@ -6,8 +6,8 @@ using System.Linq.Expressions;
 namespace Infrastructure.Persistence.Implementation;
 
 public class Repository<TEntity>(AuthDbContext context) 
-    : IRepository<TEntity>
-    where TEntity : class
+        : IRepository<TEntity>
+        where TEntity : class
 {
     private readonly DbSet<TEntity> _entity= context.Set<TEntity>();
 
