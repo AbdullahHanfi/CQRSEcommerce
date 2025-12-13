@@ -29,7 +29,7 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : IdentityDb
         builder.Entity<User>(entity =>
         {
             // Configure unique index on Email , Username properties
-            entity.HasIndex(e => e.Email).IsUnique();   
+            entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.Username).IsUnique();
 
             entity.HasKey(e => e.Id);
@@ -49,7 +49,7 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : IdentityDb
             entity.Property(e => e.ImagePath).IsRequired().HasMaxLength(250);
             entity.Property(e => e.Price).IsRequired().HasColumnType("decimal(18,2)");
             entity.Property(e => e.Category).IsRequired().HasMaxLength(250);
-            
+
             // Seed initial data
             entity.HasData(Seed.Products());
         });

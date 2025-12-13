@@ -20,6 +20,6 @@ public interface IFileStorageService
     /// <param name="fileName">file name</param>
     /// <param name="expirationTime">when will link disable</param>
     /// <returns>URL for success or false with reason of failure</returns>
-    Task<Result<string>> GetFileURLAsync(string fileName,DateTime expirationTime);
+    Task<Result<string>> GetFileURLAsync(string fileName, DateTime expirationTime);
     Task<Result> DeleteFileAsync(string fileName);
 }

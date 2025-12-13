@@ -15,7 +15,7 @@ public class FileStorageService : IFileStorageService
     private readonly ILogger<FileStorageService> _logger;
 
 
-    public FileStorageService(IOptions<DigitalOceanSpaceSettings> cloudSettings,ILogger<FileStorageService> logger)
+    public FileStorageService(IOptions<DigitalOceanSpaceSettings> cloudSettings, ILogger<FileStorageService> logger)
     {
         var config = new AmazonS3Config
         {
@@ -23,7 +23,7 @@ public class FileStorageService : IFileStorageService
             ForcePathStyle = true
         };
         _bucketName = cloudSettings.Value.BucketName;
-        _client = new AmazonS3Client(cloudSettings.Value.AccessKey, cloudSettings.Value.SecretKey,config) ;
+        _client = new AmazonS3Client(cloudSettings.Value.AccessKey, cloudSettings.Value.SecretKey, config);
         _logger = logger;
     }
     public async Task<Result> UploadStreamAsync(Stream fileStream, string fileName, string contentType)
@@ -40,14 +40,14 @@ public class FileStorageService : IFileStorageService
             };
 
             var response = await _client.PutObjectAsync(putRequest);
-            return 
-                response.HttpStatusCode == System.Net.HttpStatusCode.OK 
-                ? Result.Success() 
+            return
+                response.HttpStatusCode == System.Net.HttpStatusCode.OK
+                ? Result.Success()
                 : Result.Failure(new Error("Didn't upload"));
         }
         catch (AmazonS3Exception ex)
         {
-            _logger.LogError("Error uploading stream: {Message}",ex.Message);
+            _logger.LogError("Error uploading stream: {Message}", ex.Message);
             return Result.Failure(new(ex.Message));
         }
     }
@@ -83,7 +83,7 @@ public class FileStorageService : IFileStorageService
             };
 
             var response = await _client.DeleteObjectAsync(deleteRequest);
-            return response.HttpStatusCode == System.Net.HttpStatusCode.NoContent 
+            return response.HttpStatusCode == System.Net.HttpStatusCode.NoContent
                 ? Result.Success()
                 : Result.Failure(new Error("Didn't delete"));
 

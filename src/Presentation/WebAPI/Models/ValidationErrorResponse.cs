@@ -11,7 +11,7 @@
         /// The field that has a validation error.
         /// </summary>
         /// <example>Password</example>
-        public string Field { get;  }
+        public string Field { get; }
 
         /// <summary>
         /// The list of validation error messages for the field.

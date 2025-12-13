@@ -3,21 +3,25 @@ namespace WebAPI.Middlewares;
 using System.Text.Json;
 using Domain.Exceptions;
 
-public class ExceptionHandlingMiddleware : IMiddleware {
+public class ExceptionHandlingMiddleware : IMiddleware
+{
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
 
     public ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddleware> logger) => _logger = logger;
 
-    public async Task InvokeAsync(HttpContext context, RequestDelegate next) {
-        try{ await next(context); }
-        catch (Exception e){
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+        try { await next(context); }
+        catch (Exception e)
+        {
             _logger.LogError(e, e.Message);
 
             await HandleExceptionAsync(context, e);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext httpContext, Exception exception) {
+    private static async Task HandleExceptionAsync(HttpContext httpContext, Exception exception)
+    {
         httpContext.Response.ContentType = "application/json";
 
         httpContext.Response.StatusCode = exception switch
@@ -29,7 +33,8 @@ public class ExceptionHandlingMiddleware : IMiddleware {
 
         var errors = Array.Empty<ApiError>();
 
-        while (exception.InnerException != null){
+        while (exception.InnerException != null)
+        {
             errors.Append(new ApiError(exception.Source, exception.Message));
             exception = exception.InnerException;
         }

@@ -1,6 +1,7 @@
 namespace Domain.Repositories;
 
-public interface IUnitOfWork : IDisposable {
+public interface IUnitOfWork : IDisposable
+{
     /// <summary>
     /// Saves all changes made in this unit of work to the underlying database.
     /// </summary>

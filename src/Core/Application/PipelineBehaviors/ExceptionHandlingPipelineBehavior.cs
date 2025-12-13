@@ -27,7 +27,7 @@ public class ExceptionHandlingPipelineBehavior<TRequest, TResponse>(ILogger<Exce
         {
             var requestName = typeof(TRequest).Name;
             logger.LogError("Unhandled exception for {RequestName} with {@Error}", requestName, ex);
-            throw new (ex.Message);
+            throw new(ex.Message);
         }
     }
 }

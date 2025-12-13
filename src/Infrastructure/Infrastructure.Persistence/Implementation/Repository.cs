@@ -5,11 +5,11 @@ using System.Linq.Expressions;
 
 namespace Infrastructure.Persistence.Implementation;
 
-public class Repository<TEntity>(AuthDbContext context) 
+public class Repository<TEntity>(AuthDbContext context)
         : IRepository<TEntity>
         where TEntity : class
 {
-    private readonly DbSet<TEntity> _entity= context.Set<TEntity>();
+    private readonly DbSet<TEntity> _entity = context.Set<TEntity>();
 
     public async Task AddAsync(TEntity entity)
     {
@@ -45,7 +45,7 @@ public class Repository<TEntity>(AuthDbContext context)
     {
         _entity.Remove(entity);
     }
-    
+
     public IQueryable<TEntity> Skip(int count)
     {
         return _entity.Skip(count);

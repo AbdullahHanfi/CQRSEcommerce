@@ -5,14 +5,16 @@ namespace Application.PipelineBehaviors;
 using Abstractions.Messaging;
 
 public sealed class ValidationPipelineBehavior<TRequest, TResponse>
-    (IEnumerable<IValidator<TRequest>> validators) 
+    (IEnumerable<IValidator<TRequest>> validators)
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : class {
+    where TRequest : class
+{
 
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken cancellationToken) {
+        CancellationToken cancellationToken)
+    {
         if (!validators.Any())
         {
             return await next(cancellationToken);

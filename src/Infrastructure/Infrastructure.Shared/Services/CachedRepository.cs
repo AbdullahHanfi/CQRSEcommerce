@@ -229,7 +229,7 @@ public class CachedRepository<TEntity>(Repository<TEntity> repository,
     {
         var server = redis.GetServer(redis.GetEndPoints().First());
         var keys = server.Keys(pattern: pattern).ToArray();
-        
+
         if (keys is not null && keys.Any())
         {
             await redis.GetDatabase().KeyDeleteAsync(keys);

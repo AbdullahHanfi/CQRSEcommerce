@@ -10,7 +10,7 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
         RuleFor(x => x.Email)
             .NotEmpty()
             .WithMessage(ValidationMessages.EmailRequired)
-            .Matches(@"^(?!.*\.\.\s+)([A-Za-z0-9]+([.+_-][A-Za-z0-9]+)*)@([A-Za-z0-9]+([.-][A-Za-z0-9]+)*)\.[A-Za-z]{2,63}$",RegexOptions.IgnoreCase)
+            .Matches(@"^(?!.*\.\.\s+)([A-Za-z0-9]+([.+_-][A-Za-z0-9]+)*)@([A-Za-z0-9]+([.-][A-Za-z0-9]+)*)\.[A-Za-z]{2,63}$", RegexOptions.IgnoreCase)
             .WithMessage(ValidationMessages.InvalidEmailFormat);
 
         RuleFor(x => x.Password)

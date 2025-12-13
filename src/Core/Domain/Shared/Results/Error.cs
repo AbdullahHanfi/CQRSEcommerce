@@ -1,28 +1,32 @@
 namespace Domain.Shared.Results;
 
-public class Error {
-    public static readonly Error None = new( string.Empty);
-    public static readonly Error NullValue = new( "The specified result value is null.");
-    public static readonly Error NotFound = new( "Not found.");
-    
-    public Error(string message) {
+public class Error
+{
+    public static readonly Error None = new(string.Empty);
+    public static readonly Error NullValue = new("The specified result value is null.");
+    public static readonly Error NotFound = new("Not found.");
+
+    public Error(string message)
+    {
         Message = message;
     }
 
     public string Message { get; }
 
-    public static bool operator ==(Error? a, Error? b) {
-        if (a is null && b is null){ return true; }
+    public static bool operator ==(Error? a, Error? b)
+    {
+        if (a is null && b is null) { return true; }
 
-        if (a is null || b is null){ return false; }
+        if (a is null || b is null) { return false; }
 
         return a.Equals(b);
     }
 
     public static bool operator !=(Error? a, Error? b) => !(a == b);
 
-    public virtual bool Equals(Error? other) {
-        if (other is null){ return false; }
+    public virtual bool Equals(Error? other)
+    {
+        if (other is null) { return false; }
 
         return Message == other.Message;
     }

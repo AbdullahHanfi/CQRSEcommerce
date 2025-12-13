@@ -3,8 +3,9 @@ namespace Application.Features.Products.Command.AddProduct
 {
     public class AddProductCommandValidator : AbstractValidator<AddProductCommand>
     {
-        public AddProductCommandValidator() { 
-            
+        public AddProductCommandValidator()
+        {
+
             RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Product name is required.")
             .MaximumLength(100).WithMessage("Product name cannot exceed 100 characters.");

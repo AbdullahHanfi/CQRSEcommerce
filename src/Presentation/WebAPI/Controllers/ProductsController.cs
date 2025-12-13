@@ -58,7 +58,7 @@ namespace WebAPI.Controllers
             try
             {
                 using Stream stream = request.Image.OpenReadStream();
-                var result = await Sender.Send(new AddProductCommand(request.ProductCode, request.Name, stream,request.Image.ContentType, request.Price, request.Quantity, request.DiscountRate, request.Category));
+                var result = await Sender.Send(new AddProductCommand(request.ProductCode, request.Name, stream, request.Image.ContentType, request.Price, request.Quantity, request.DiscountRate, request.Category));
                 if (result.IsSuccess)
                     return Ok(result.Value);
                 else

@@ -18,7 +18,7 @@ public static class DependencyInjection
         services.AddSingleton<IConnectionMultiplexer>(
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!)
         );
-        
+
         services.AddStackExchangeRedisCache(options =>
                 options.InstanceName = "master"
             );
@@ -27,7 +27,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IFileStorageService, FileStorageService>();
         services.AddSingleton<IImageService, ImageService>();
-        
+
         // services.Decorate(typeof(IRepository<>), typeof(CachedRepository<>));
         services.AddScoped(typeof(IRepository<>), typeof(CachedRepository<>));
 
