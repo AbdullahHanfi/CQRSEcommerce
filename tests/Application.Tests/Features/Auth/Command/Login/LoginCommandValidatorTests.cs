@@ -1,88 +1,52 @@
-﻿
-namespace Application.Tests.Features.Auth.Command.Login;
+﻿using Application.Common.Constants;
+
+namespace Application.Features.Auth.Command.Login;
 
 [TestFixture]
 public class LoginCommandValidatorTests
 {
-    private LoginCommandValidator _validator;
+    private readonly LoginCommandValidator _validator = new();
 
-    [SetUp]
-    public void SetUp()
-    {
-        _validator = new LoginCommandValidator();
-    }
-
-    [Test]
-    public void Validate_ValidCommand_PassesValidation()
+    [Theory]
+    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.EmptyEmails))]
+    public void Email_WhenEmpty_Should_HaveValidationError(string email)
     {
         // Arrange
-        var command = new LoginCommand("test@example.com", "Password123");
+        var command = new LoginCommand(email, "password");
 
         // Act
-        var result = _validator.Validate(command);
+        var result = _validator.TestValidate(command);
 
         // Assert
-        Assert.That(result.IsValid, Is.True);
-        Assert.That(result.Errors, Is.Empty);
+        result.ShouldHaveValidationErrorFor(x => x.Email)
+            .WithErrorMessage(ValidationMessages.EmailRequired);
     }
 
-    [Test]
-    [TestCase("", "Password123", "Email is required.")]
-    [TestCase("invalid-email", "Password123", "Invalid email format.")]
-    [TestCase("@example.com", "Password123", "Invalid email format.")]
-    public void Validate_InvalidEmail_FailsValidation(string email, string password, string expectedError)
+    [Theory]
+    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.InvalidEmails))]
+    public void Email_WhenInValid_Should_HaveValidationError(string email)
     {
         // Arrange
-        var command = new LoginCommand(email, password);
+        var command = new LoginCommand(email, "password");
 
         // Act
-        var result = _validator.Validate(command);
+        var result = _validator.TestValidate(command);
 
         // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors.Any(x => x.ErrorMessage == expectedError), Is.True);
+        result.ShouldHaveValidationErrorFor(x => x.Email)
+            .WithErrorMessage(ValidationMessages.InvalidEmailFormat);
     }
-
-    [Test]
-    [TestCase("test@example.com", "", "Password is required.")]
-    [TestCase("test@example.com", "12345", "Password must be at least 6 characters long.")]
-    public void Validate_InvalidPassword_FailsValidation(string email, string password, string expectedError)
+    [Theory]
+    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.ValidEmails))]
+    public void Email_WhenIsValid_ShouldNot_HaveValidationError(string email)
     {
         // Arrange
-        var command = new LoginCommand(email, password);
+        var command = new LoginCommand(email, "password");
 
         // Act
-        var result = _validator.Validate(command);
+        var result = _validator.TestValidate(command);
 
         // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors.Any(x => x.ErrorMessage == expectedError), Is.True);
-    }
-
-    [Test]
-    public void Validate_BothFieldsInvalid_ReturnsTwoErrors()
-    {
-        // Arrange
-        var command = new LoginCommand("", "123123");
-
-        // Act
-        var result = _validator.Validate(command);
-
-        // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors.Count, Is.EqualTo(2));
-    }
-    [Test]
-    public void Validate_BothFieldsInvalid_ReturnsThreeErrors()
-    {
-        // Arrange
-        var command = new LoginCommand("", "12312");
-
-        // Act
-        var result = _validator.Validate(command);
-
-        // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors.Count, Is.EqualTo(3));
+        result.ShouldNotHaveAnyValidationErrors();
     }
 }

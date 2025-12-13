@@ -1,15 +1,3 @@
-﻿namespace Application.Tests;
-
-public class Tests
-{
-    [SetUp]
-    public void Setup()
-    {
-    }
-
-    [Test]
-    public void Test1()
-    {
-        Assert.Pass();
-    }
-}
+﻿global using FluentValidation.TestHelper;
+global using Moq;
+global using Application.TestConstants;

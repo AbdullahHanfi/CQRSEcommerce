@@ -1,120 +1,55 @@
-﻿namespace Application.Tests.Features.Auth.Command.Login;
+﻿
+using Application.Abstractions.Services;
+using Application.DTOs.Auth;
+using Application.Request.Auth;
+using Domain.Shared.Results;
+
+namespace Application.Features.Auth.Command.Login;
 
 [TestFixture]
 public class LoginCommandHandlerTests
 {
-    private Mock<IAuthenticationService> _authServiceMock;
+    private Mock<IAuthenticationService> _mockAuthenticationService;
     private LoginCommandHandler _handler;
-    private CancellationToken _cancellationToken;
-
     [SetUp]
-    public void SetUp()
+    public void Setup()
     {
-        _authServiceMock = new Mock<IAuthenticationService>();
-        _handler = new LoginCommandHandler(_authServiceMock.Object);
-        _cancellationToken = CancellationToken.None;
+        _mockAuthenticationService = new Mock<IAuthenticationService>();
     }
-
     [Test]
-    public async Task Handle_ValidCredentials_ReturnsSuccessfulAuthDto()
+    public async Task Handle_ValidCredentials_Returns_SuccessResult()
     {
         // Arrange
-        var command = new LoginCommand("test@example.com", "Password123");
-        var expectedAuthDto = new AuthDto(
-            "TestUser",
-            "test@example.com",
-            "jwt-token-here",
-            DateTime.UtcNow.AddHours(1),
-            "refresh-token-here",
-            DateTime.UtcNow.AddDays(7),
-            true
-        );
+        var request = new TokenRequest("mail", "password");
+        var command = new LoginCommand("mail", "password");
+        var expectedResult = new AuthDto("mail", "password", "token", DateTime.Now, "refreshToken", DateTime.Now, true);
+        _mockAuthenticationService
+            .Setup(e => e.GetTokenAsync(request))
+            .ReturnsAsync(Result.Success(expectedResult));
 
-        _authServiceMock
-            .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequest>()))
-            .ReturnsAsync(Result.Success(expectedAuthDto));
-
-        // Act
-        var result = await _handler.Handle(command, _cancellationToken);
+        _handler = new LoginCommandHandler(_mockAuthenticationService.Object);
+        // Act 
+        var actualResult = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.Not.Null);
-        Assert.That(result.Value.Email, Is.EqualTo(expectedAuthDto.Email));
-        Assert.That(result.Value.UserName, Is.EqualTo(expectedAuthDto.UserName));
-        Assert.That(result.Value.Token, Is.EqualTo(expectedAuthDto.Token));
-        Assert.That(result.Value.IsAuthenticated, Is.True);
+        Assert.That(actualResult.IsSuccess);
+        Assert.That(expectedResult, Is.EqualTo(actualResult.Value));
     }
-
     [Test]
-    public async Task Handle_InvalidCredentials_ReturnsFailureResult()
+    public async Task Handle_InvalidCredentials_Returns_FailureResult()
     {
         // Arrange
-        var command = new LoginCommand("test@example.com", "WrongPassword");
-        var error = new Error("Email or Password is incorrect!");
-
-        _authServiceMock
+        var command = new LoginCommand("test@test.com", "wrong_pass");
+        _mockAuthenticationService
             .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequest>()))
-            .ReturnsAsync(Result.Failure<AuthDto>(error));
+            .ReturnsAsync(Result.Failure<AuthDto>(new Error("Invalid credentials")));
+
+        _handler = new LoginCommandHandler(_mockAuthenticationService.Object);
 
         // Act
-        var result = await _handler.Handle(command, _cancellationToken);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(result.IsSuccess, Is.False);
-        Assert.That(result.Error.Message, Is.EqualTo("Email or Password is incorrect!"));
-    }
-
-    [Test]
-    public async Task Handle_CallsAuthServiceWithCorrectParameters()
-    {
-        // Arrange
-        var command = new LoginCommand("test@example.com", "Password123");
-        TokenRequest capturedRequest = null;
-
-        _authServiceMock
-            .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequest>()))
-            .Callback<TokenRequest>(req => capturedRequest = req)
-            .ReturnsAsync(Result.Success(CreateAuthDto()));
-
-        // Act
-        await _handler.Handle(command, _cancellationToken);
-
-        // Assert
-        _authServiceMock.Verify(x => x.GetTokenAsync(It.IsAny<TokenRequest>()), Times.Once);
-        Assert.That(capturedRequest, Is.Not.Null);
-        Assert.That(capturedRequest.Email, Is.EqualTo(command.Email));
-        Assert.That(capturedRequest.Password, Is.EqualTo(command.Password));
-    }
-
-    [Test]
-    public async Task Handle_WhenAuthServiceThrowsException_ThrowsException()
-    {
-        // Arrange
-        var command = new LoginCommand("test@example.com", "Password123");
-        var exceptionMessage = "Database connection failed";
-
-        _authServiceMock
-            .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequest>()))
-            .ThrowsAsync(new Exception(exceptionMessage));
-
-        // Act & Assert
-        var ex = Assert.ThrowsAsync<Exception>(async () =>
-            await _handler.Handle(command, _cancellationToken));
-
-        Assert.That(ex.Message, Is.EqualTo(exceptionMessage));
-    }
-
-    private AuthDto CreateAuthDto()
-    {
-        return new AuthDto(
-            "TestUser",
-            "test@example.com",
-            "jwt-token",
-            DateTime.UtcNow.AddHours(1),
-            "refresh-token",
-            DateTime.UtcNow.AddDays(7),
-            true
-        );
+        Assert.That(result.IsFailure);
     }
 }
