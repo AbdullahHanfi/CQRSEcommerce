@@ -1,22 +1,27 @@
-﻿namespace Application.Features.Auth.Command.Register;
+﻿using System.Text.RegularExpressions;
+using Application.Common.Constants;
+
+namespace Application.Features.Auth.Command.Register;
 
 public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
     public RegisterCommandValidator()
     {
-        RuleFor(r => r.Email)
-            .NotEmpty().WithMessage("Your Email cannot be empty.")
-            .EmailAddress().WithMessage("Your Email must be valid Email.");
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .WithMessage(ValidationMessages.EmailRequired)
+            .Matches(@"^(?!.*\.\.\s+)([A-Za-z0-9]+([.+_-][A-Za-z0-9]+)*)@([A-Za-z0-9]+([.-][A-Za-z0-9]+)*)\.[A-Za-z]{2,63}$",RegexOptions.IgnoreCase)
+            .WithMessage(ValidationMessages.InvalidEmailFormat);
 
         RuleFor(x => x.Password)
-                    .NotEmpty().WithMessage("Your password cannot be empty.")
-                    .MinimumLength(6).WithMessage("Your password must be at least 6 characters long.");
+                    .NotEmpty().WithMessage(ValidationMessages.PasswordRequired)
+                    .MinimumLength(6).WithMessage(ValidationMessages.PasswordTooShort);
 
         RuleFor(r => r.UserName)
-            .NotEmpty().WithMessage("Your Username cannot be empty.");
+            .NotEmpty().WithMessage(ValidationMessages.UserNameRequired);
 
         RuleFor(x => x.ConfirmPassword)
-           .NotEmpty().WithMessage("Please confirm your password.")
-           .Equal(x => x.Password).WithMessage("The passwords do not match.");
+           .NotEmpty().WithMessage(ValidationMessages.ConfirmPasswordRequired)
+           .Equal(x => x.Password).WithMessage(ValidationMessages.ConfirmPasswordNotMatch);
     }
 }

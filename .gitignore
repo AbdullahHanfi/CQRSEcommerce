@@ -8,8 +8,26 @@
 *.sln.docstates
 
 # Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
 [Bb]in/
 [Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+ScaffoldingReadMe.txt
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -26,6 +44,9 @@ riderModule.iml
 
 # NuGet Packages
 *.nupkg
+*.snupkg
+.env
+
 # The packages folder can be ignored because of Package Restore
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
@@ -40,3 +61,15 @@ Thumbs.db
 
 # ignore development settings
 appsettings.json
+
+# Others
+~$*
+*~
+CodeCoverage/
+
+# NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
