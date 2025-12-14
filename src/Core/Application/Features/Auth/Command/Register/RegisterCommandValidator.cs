@@ -18,7 +18,11 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
                     .MinimumLength(6).WithMessage(ValidationMessages.PasswordTooShort);
 
         RuleFor(r => r.UserName)
-            .NotEmpty().WithMessage(ValidationMessages.UserNameRequired);
+            .NotEmpty().WithMessage(ValidationMessages.UsernameRequired)
+            .MaximumLength(20)
+            .WithMessage(ValidationMessages.UsernameLength)
+            .Matches(@"^[a-zA-Z][a-zA-Z0-9_]{1,20}$")
+            .WithMessage(ValidationMessages.UsernameInvalidCharacters);
 
         RuleFor(x => x.ConfirmPassword)
            .NotEmpty().WithMessage(ValidationMessages.ConfirmPasswordRequired)
