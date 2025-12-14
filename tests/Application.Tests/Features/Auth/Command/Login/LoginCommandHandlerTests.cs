@@ -1,5 +1,6 @@
 ﻿
 using Application.Abstractions.Services;
+using Application.Builders;
 using Application.DTOs.Auth;
 using Application.Request.Auth;
 using Domain.Shared.Results;
@@ -22,7 +23,8 @@ public class LoginCommandHandlerTests
         // Arrange
         var request = new TokenRequest("mail", "password");
         var command = new LoginCommand("mail", "password");
-        var expectedResult = new AuthDto("mail", "password", "token", DateTime.Now, "refreshToken", DateTime.Now, true);
+        var expectedResult = new AuthDtoBuilder()
+            .Build();
         _mockAuthenticationService
             .Setup(e => e.GetTokenAsync(request))
             .ReturnsAsync(Result.Success(expectedResult));

@@ -2,7 +2,7 @@
 
 internal static class TestEmailConstants
 {
-    internal static IEnumerable<string> InvalidEmails => new List<string>
+    internal static IEnumerable<string> InvalidEmailCases => new List<string>
     {
         "plainaddress",
         "@missingusername.com",
@@ -34,7 +34,7 @@ internal static class TestEmailConstants
         " user123@1example5.com"
     };
 
-    internal static IEnumerable<string> ValidEmails => new List<string>
+    internal static IEnumerable<string> ValidEmailCases => new List<string>
     {
         "jane.doe+newsletter@example.org",
         "test.user@example.com",
@@ -49,7 +49,7 @@ internal static class TestEmailConstants
         "first_name.last+name@ex.am.ple.com",
     };
 
-    internal static IEnumerable<string> EmptyEmails => new List<string>
+    internal static IEnumerable<string> EmptyEmailCases => new List<string>
     {
         "",
         " ",

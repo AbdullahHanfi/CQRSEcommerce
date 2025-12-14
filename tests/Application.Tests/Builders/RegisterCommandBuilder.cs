@@ -1,4 +1,6 @@
-﻿namespace Application.Features.Auth.Command.Register;
+﻿using Application.Features.Auth.Command.Register;
+
+namespace Application.Builders;
 
 public class RegisterCommandBuilder
 {

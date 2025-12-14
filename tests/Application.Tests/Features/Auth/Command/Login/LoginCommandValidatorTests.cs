@@ -8,7 +8,7 @@ public class LoginCommandValidatorTests
     private readonly LoginCommandValidator _validator = new();
 
     [Theory]
-    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.EmptyEmails))]
+    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.EmptyEmailCases))]
     public void Email_WhenEmpty_Should_HaveValidationError(string email)
     {
         // Arrange
@@ -23,7 +23,7 @@ public class LoginCommandValidatorTests
     }
 
     [Theory]
-    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.InvalidEmails))]
+    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.InvalidEmailCases))]
     public void Email_WhenInValid_Should_HaveValidationError(string email)
     {
         // Arrange
@@ -37,7 +37,7 @@ public class LoginCommandValidatorTests
             .WithErrorMessage(ValidationMessages.InvalidEmailFormat);
     }
     [Theory]
-    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.ValidEmails))]
+    [TestCaseSource(typeof(TestEmailConstants), nameof(TestEmailConstants.ValidEmailCases))]
     public void Email_WhenIsValid_ShouldNot_HaveValidationError(string email)
     {
         // Arrange
