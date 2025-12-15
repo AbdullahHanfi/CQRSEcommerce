@@ -1,6 +1,6 @@
 ﻿using Application.Features.Auth.Command.Register;
 
-namespace Application.Builders;
+namespace Application.BuilderEntities;
 
 public class RegisterCommandBuilder
 {

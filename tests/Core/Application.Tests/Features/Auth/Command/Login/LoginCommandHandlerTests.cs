@@ -1,6 +1,6 @@
 ﻿
 using Application.Abstractions.Services;
-using Application.Builders;
+using Application.BuilderEntities;
 using Application.DTOs.Auth;
 using Application.Request.Auth;
 using Domain.Shared.Results;

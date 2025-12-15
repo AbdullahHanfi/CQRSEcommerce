@@ -1,6 +1,6 @@
 ﻿using Application.DTOs.Auth;
 
-namespace Application.Builders;
+namespace Application.BuilderEntities;
 
 public class AuthDtoBuilder
 {
